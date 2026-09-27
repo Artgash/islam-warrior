@@ -205,16 +205,23 @@ Enable Google in **Authentication → Providers**, add
 
 ## Deploying
 
+See **[DEPLOY.md](DEPLOY.md)** for the full runbook — pushing to GitHub,
+deploying to Vercel, and which environment variables are optional versus
+dangerous.
+
+The short version:
+
 ```bash
-npm run build
+gh auth login
+gh repo create islam-warrior --private --source=. --remote=origin --push
+
+vercel login
+vercel --prod
 ```
 
-On **Vercel**: import the repo, framework preset Vite, add the two `VITE_`
-variables, deploy. The SPA needs a rewrite so client-side routes resolve:
-
-```json
-{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
-```
+`vercel.json` is committed and already sets the build command, output
+directory, the SPA rewrite that client-side routing requires, and security
+headers. The app deploys and plays with **no environment variables at all**.
 
 ---
 
