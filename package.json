@@ -16,6 +16,7 @@
     "sql:paste": "vite-node scripts/split-seed.ts",
     "connect": "vite-node scripts/connect.ts",
     "db:push": "supabase db push",
+    "db:apply": "vite-node scripts/apply-migrations.ts",
     "art:prompts": "vite-node scripts/art-prompts.ts"
   },
   "dependencies": {
