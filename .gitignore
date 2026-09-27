@@ -1,0 +1,36 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.local
+.env.*.local
+
+.DS_Store
+Thumbs.db
+
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+coverage
+.vite
+.turbo
+.vercel
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
+
+# Generated reference dump (recreate with `npm run art:prompts`).
+# The seed migration IS committed - it is a migration, not a scratch file.
+art-manifest.json
+
+# Generated art, if any is ever added locally rather than to Supabase storage
+public/art/

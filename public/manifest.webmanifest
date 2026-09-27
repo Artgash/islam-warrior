@@ -1,0 +1,20 @@
+{
+  "name": "ISLAM WARRIOR",
+  "short_name": "Warrior",
+  "description": "A dark Islamic-fantasy RPG where your real habits are the weapon. 66 zones. One final enemy.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0E1A",
+  "theme_color": "#0A0E1A",
+  "categories": ["health", "lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
