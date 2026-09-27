@@ -12,6 +12,7 @@ import * as selectors from '../selectors';
 import { getMonster } from '@/game/zones/monsters';
 import { MONSTERS_PER_ZONE } from '@/game/constants';
 import { today as todayISO } from '@/lib/date';
+import { isUuid, uuid } from '@/lib/utils';
 
 const USER_ID = 'test-user';
 
@@ -243,6 +244,79 @@ describe('the game loop', () => {
     // Re-running must not double-award.
     const again = useGameStore.getState().evaluateAchievements();
     expect(again.some((a) => a.id === 'ach_streak_7')).toBe(false);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Database compatibility                                              */
+/*                                                                     */
+/* Every `id` column in the Postgres schema is `uuid`. Ids used to be   */
+/* generated with a prefix ("char_9f8e..."), which Postgres rejects     */
+/* outright - so with a real Supabase project attached, nothing synced  */
+/* and the leaderboards stayed permanently empty. These tests make that */
+/* class of bug impossible to reintroduce.                             */
+/* ------------------------------------------------------------------ */
+
+describe('database compatibility', () => {
+  beforeEach(() => {
+    freshStore();
+    createWarrior();
+  });
+
+  it('generates bare UUIDs, never prefixed ids', () => {
+    expect(isUuid(uuid())).toBe(true);
+    expect(uuid()).not.toContain('_');
+    // Three in a row must differ.
+    expect(new Set([uuid(), uuid(), uuid()]).size).toBe(3);
+  });
+
+  it('gives the character a uuid primary key', () => {
+    const character = useGameStore.getState().character!;
+    expect(isUuid(character.id), `character.id was "${character.id}"`).toBe(true);
+  });
+
+  it('gives every habit a uuid primary key', () => {
+    useGameStore.getState().habits.forEach((habit) => {
+      expect(isUuid(habit.id), `habit.id was "${habit.id}"`).toBe(true);
+    });
+  });
+
+  it('gives habit logs, coin transactions and notifications uuid keys', () => {
+    useGameStore.getState().completeHabit(useGameStore.getState().habits[0].id);
+
+    const state = useGameStore.getState();
+
+    expect(state.logs.length).toBeGreaterThan(0);
+    state.logs.forEach((log) => expect(isUuid(log.id), `log.id "${log.id}"`).toBe(true));
+
+    expect(state.coinLog.length).toBeGreaterThan(0);
+    state.coinLog.forEach((tx) => expect(isUuid(tx.id), `tx.id "${tx.id}"`).toBe(true));
+
+    state.notifications.forEach((n) =>
+      expect(isUuid(n.id), `notification.id "${n.id}"`).toBe(true),
+    );
+  });
+
+  it('gives taunt logs a uuid key', () => {
+    useGameStore.getState().forceFireTaunt();
+    const taunt = useGameStore.getState().taunts[0];
+    expect(isUuid(taunt.id), `taunt.id "${taunt.id}"`).toBe(true);
+  });
+
+  it('gives active effects a uuid key', () => {
+    useGameStore.getState().updateCharacter({ coins: 10_000, rank_tier: 5 });
+    useGameStore.getState().buyItem('cn_xp2');
+    useGameStore.getState().useConsumable('cn_xp2');
+
+    const effects = useGameStore.getState().activeEffects;
+    expect(effects.length).toBeGreaterThan(0);
+    effects.forEach((e) => expect(isUuid(e.id), `effect.id "${e.id}"`).toBe(true));
+  });
+
+  it('rejects the old prefixed format, so a regression is caught', () => {
+    expect(isUuid('char_0f8d1a2b-3c4d-4e5f-8a9b-0c1d2e3f4a5b')).toBe(false);
+    expect(isUuid('habit_abc')).toBe(false);
+    expect(isUuid('')).toBe(false);
   });
 });
 

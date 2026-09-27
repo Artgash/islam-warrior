@@ -15,7 +15,7 @@ import type {
 import { isSupabaseConfigured, requireSupabase, supabase } from '@/lib/supabase';
 import { currentWeekKey, nowTimestamp } from '@/lib/date';
 import { GUILD_CHAT_HISTORY, GUILD_EMBLEMS, GUILD_MAX_MEMBERS } from '@/game/constants';
-import { uid } from '@/lib/utils';
+import { uuid } from '@/lib/utils';
 import { readJsonSync, writeJson } from '@/platform/storage';
 
 const LOCAL_GUILDS_KEY = 'guilds:list';
@@ -115,7 +115,7 @@ export interface CreateGuildInput {
 
 export async function createGuild(input: CreateGuildInput): Promise<Guild> {
   const guild: Guild = {
-    id: uid('guild_'),
+    id: uuid(),
     name: input.name.trim(),
     tag: input.tag.trim().toUpperCase(),
     description: input.description.trim(),
@@ -295,7 +295,7 @@ export async function sendMessage(
   body: string,
 ): Promise<GuildMessage> {
   const message: GuildMessage = {
-    id: uid('msg_'),
+    id: uuid(),
     guild_id: guildId,
     user_id: character.user_id,
     author_name: character.name,

@@ -16,7 +16,7 @@ import { applyDecay, evaluateComeback } from '@/game/ranks/decay';
 import { aggregateEquipped } from '@/game/shop/gearStats';
 import { effectiveMaxHp } from '@/game/battle/formulas';
 import { getMonster } from '@/game/zones/monsters';
-import { uid } from '@/lib/utils';
+import { uuid } from '@/lib/utils';
 import { nowTimestamp } from '@/lib/date';
 import { play, vibrate } from '@/platform/sound';
 import { pushCharacter, pushCoinTransaction } from '@/api/sync';
@@ -30,7 +30,7 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     const firstMonster = getMonster(1, 0);
 
     const character: Character = {
-      id: uid('char_'),
+      id: uuid(),
       user_id: userId,
       name: input.name.trim(),
       avatar_id: input.avatar_id,
@@ -176,7 +176,7 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     };
 
     const tx = {
-      id: uid('tx_'),
+      id: uuid(),
       user_id: character.user_id,
       amount,
       reason,
@@ -201,7 +201,7 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     };
 
     const tx = {
-      id: uid('tx_'),
+      id: uuid(),
       user_id: character.user_id,
       amount: -amount,
       reason,

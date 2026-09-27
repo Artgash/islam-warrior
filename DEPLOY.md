@@ -71,8 +71,6 @@ vercel --prod   # production
 Vercel will detect Vite automatically. `vercel.json` is already committed and
 sets the build command, the output directory, the SPA rewrite that client-side
 routing needs, and security headers — so accept the detected defaults.
-
-**Or connect the repo instead of using the CLI**, which gives you automatic
 deploys on every push: vercel.com → **Add New** → **Project** → import the
 GitHub repo you just created. Framework preset **Vite**. Everything else is
 already configured by `vercel.json`.

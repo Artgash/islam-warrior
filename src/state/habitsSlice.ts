@@ -1,6 +1,6 @@
 import type { Character, Habit, HabitLog, LootResult } from '@/types';
 import type { CompleteHabitOutcome, HabitsSlice, SliceCreator } from './types';
-import { uid } from '@/lib/utils';
+import { uuid } from '@/lib/utils';
 import { nowTimestamp, today as todayISO } from '@/lib/date';
 import { getMonster } from '@/game/zones/monsters';
 import { aggregateEquipped } from '@/game/shop/gearStats';
@@ -30,7 +30,7 @@ import { deleteHabitRemote, pushHabitLog, pushHabits } from '@/api/sync';
 
 function newHabit(userId: string, input: Parameters<HabitsSlice['addHabit']>[0]): Habit {
   return {
-    id: uid('habit_'),
+    id: uuid(),
     user_id: userId,
     name: input.name.trim(),
     description: input.description?.trim() || null,
@@ -172,7 +172,7 @@ export const createHabitsSlice: SliceCreator<HabitsSlice> = (set, get) => ({
     /* --- Log the completion ---------------------------------------- */
 
     const log: HabitLog = {
-      id: uid('log_'),
+      id: uuid(),
       user_id: character.user_id,
       habit_id: habit.id,
       date,

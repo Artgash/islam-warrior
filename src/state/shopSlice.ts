@@ -14,7 +14,7 @@ import {
 } from '@/game/shop/gearStats';
 import { effectiveMaxHp } from '@/game/battle/formulas';
 import { FRAGMENTS_PER_LEGENDARY, MORALE_BUFF_HOURS } from '@/game/constants';
-import { uid } from '@/lib/utils';
+import { uuid } from '@/lib/utils';
 import { play } from '@/platform/sound';
 import { pushInventory } from '@/api/sync';
 
@@ -131,7 +131,7 @@ export const createShopSlice: SliceCreator<ShopSlice> = (set, get) => ({
       case 'combo_charm':
       case 'loot_luck': {
         const effect: ActiveEffect = {
-          id: uid('fx_'),
+          id: uuid(),
           effect: consumable.effect,
           magnitude: consumable.magnitude,
           expires_at: expiresAt,

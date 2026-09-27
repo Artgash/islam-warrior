@@ -39,6 +39,11 @@ export interface UserSlice {
 
   setUser: (user: AppUser | null) => void;
   setHydrated: (value: boolean) => void;
+  /**
+   * Pull this account's state down from Supabase after sign-in, so the same
+   * account carries across devices. Returns what happened, so the UI can say.
+   */
+  hydrateFromCloud: (userId: string) => Promise<'pulled' | 'pushed' | 'offline' | 'failed'>;
   updateSettings: (patch: Partial<Settings>) => void;
   pushNotification: (
     notification: Omit<AppNotification, 'id' | 'user_id' | 'created_at' | 'read'>,

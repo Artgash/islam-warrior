@@ -60,6 +60,12 @@ export interface AuthResult {
   user: AppUser;
   /** True when the account was created by this call. */
   created: boolean;
+  /**
+   * Supabase returned a user but no session, which means the project has
+   * "Confirm email" switched on and the address must be verified before the
+   * account can be used. The UI shows a "check your inbox" state.
+   */
+  needsEmailConfirmation?: boolean;
 }
 
 export async function signUp(email: string, password: string): Promise<AuthResult> {
@@ -67,9 +73,18 @@ export async function signUp(email: string, password: string): Promise<AuthResul
 
   if (isSupabaseConfigured) {
     const client = requireSupabase();
-    const { data, error } = await client.auth.signUp({ email: normalized, password });
+    const { data, error } = await client.auth.signUp({
+      email: normalized,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error('Sign-up did not return a user.');
+
+    // A user with no session means the project requires email confirmation.
+    // Supabase also returns a user here for an address that already exists,
+    // deliberately, so it cannot be used to enumerate accounts.
+    const needsEmailConfirmation = !data.session;
 
     return {
       user: {
@@ -80,6 +95,7 @@ export async function signUp(email: string, password: string): Promise<AuthResul
         onboarded: false,
       },
       created: true,
+      needsEmailConfirmation,
     };
   }
 

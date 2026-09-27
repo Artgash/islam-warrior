@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, FieldError } from '@/components/ui/input';
 import { StarDivider, GeometricField, EightPointStar } from '@/components/common/StarDivider';
@@ -28,9 +28,11 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const setUser = useGameStore((s) => s.setUser);
   const character = useGameStore((s) => s.character);
+  const hydrateFromCloud = useGameStore((s) => s.hydrateFromCloud);
 
   const [mode, setMode] = useState<Mode>('signin');
   const [busy, setBusy] = useState(false);
+  const [awaitingEmail, setAwaitingEmail] = useState<string | null>(null);
 
   const form = useForm<Credentials>({
     resolver: zodResolver(credentialsSchema),
@@ -52,11 +54,30 @@ export default function LandingPage() {
           ? await signUp(values.email, values.password)
           : await signIn(values.email, values.password);
 
-      setUser(result.user);
-      toast.success(mode === 'signup' ? 'Account created.' : 'Welcome back.');
+      // The address has to be verified before the account works at all, so
+      // stop here rather than dropping them into a half-working session.
+      if (result.needsEmailConfirmation) {
+        setAwaitingEmail(result.user.email);
+        return;
+      }
 
-      // An existing character skips onboarding entirely.
-      navigate(character ? '/' : '/onboarding', { replace: true });
+      setUser(result.user);
+
+      // Bring this account's progress down from the cloud before deciding
+      // where to send them - otherwise a returning player on a new device
+      // would be pushed through onboarding again.
+      const sync = await hydrateFromCloud(result.user.id);
+
+      if (sync === 'pulled') {
+        toast.success('Welcome back. Progress restored.');
+      } else if (sync === 'failed') {
+        toast.warning('Signed in, but cloud sync failed. Playing from this device.');
+      } else {
+        toast.success(mode === 'signup' ? 'Account created.' : 'Welcome back.');
+      }
+
+      const restored = useGameStore.getState().character;
+      navigate(restored ?? character ? '/' : '/onboarding', { replace: true });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Something went wrong.');
     } finally {
@@ -109,6 +130,39 @@ export default function LandingPage() {
         </motion.div>
 
         <StarDivider className="my-6" />
+
+        {/* Email verification pending */}
+        {awaitingEmail ? (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="panel framed p-5 text-center"
+          >
+            <Mail className="mx-auto mb-3 size-8 text-gold" />
+            <h2 className="font-display text-lg text-bone">Check your inbox</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              A confirmation link is on its way to{' '}
+              <span className="text-bone">{awaitingEmail}</span>. Open it, and your account is
+              live.
+            </p>
+            <p className="mt-3 text-xs text-muted/70">
+              Nothing there after a minute? Check spam — confirmation mail often lands there.
+            </p>
+
+            <Button
+              variant="secondary"
+              size="block"
+              className="mt-5"
+              onClick={() => {
+                setAwaitingEmail(null);
+                setMode('signin');
+              }}
+            >
+              Back to sign in
+            </Button>
+          </motion.div>
+        ) : (
+        <>
 
         {/* Auth form */}
         <motion.div
@@ -198,6 +252,8 @@ export default function LandingPage() {
             )}
           </div>
         </motion.div>
+        </>
+        )}
 
         {!isSupabaseConfigured && (
           <p className="mt-4 rounded-lg border border-edge bg-card/60 px-3 py-2 text-center text-[11px] leading-relaxed text-muted">

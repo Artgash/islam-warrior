@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { StarDivider } from '@/components/common/StarDivider';
+import { ConnectionStatus } from '@/components/common/ConnectionStatus';
 import { deleteAccount, signOut, updatePassword } from '@/api/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { setMusicEnabled, setSoundEnabled } from '@/platform/sound';
@@ -69,8 +70,12 @@ export default function SettingsPage() {
 
   return (
     <PageShell title="Settings">
+      {/* Connection -------------------------------------------------- */}
+      <StarDivider label="Connection" />
+      <ConnectionStatus />
+
       {/* Account ---------------------------------------------------- */}
-      <StarDivider label="Account" />
+      <StarDivider label="Account" className="mt-6" />
 
       <div className="panel space-y-3 p-4">
         <div>

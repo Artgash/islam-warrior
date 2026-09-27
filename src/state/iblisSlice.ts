@@ -2,7 +2,7 @@ import type { TauntLog } from '@/types';
 import type { IblisSlice, SliceCreator } from './types';
 import { canFireTaunt, pendingTaunt, selectTaunt } from '@/game/iblis/taunts';
 import { buildMoraleBuff, getReply } from '@/game/iblis/replies';
-import { uid } from '@/lib/utils';
+import { uuid } from '@/lib/utils';
 import { nowTimestamp } from '@/lib/date';
 import { play } from '@/platform/sound';
 import { pushTauntLog } from '@/api/sync';
@@ -36,7 +36,7 @@ export const createIblisSlice: SliceCreator<IblisSlice> = (set, get) => ({
     const taunt = selectTaunt(state.taunts);
 
     const log: TauntLog = {
-      id: uid('taunt_'),
+      id: uuid(),
       user_id: character.user_id,
       taunt_id: taunt.id,
       taunt_text: taunt.text,
