@@ -7,9 +7,16 @@
  * wrong key is bad: the app falls back to local mode or throws on first
  * query, and neither says "your key is malformed".
  *
- * It also refuses a service_role key outright. That key bypasses row-level
- * security, and anything with a VITE_ prefix is compiled into the bundle
- * every visitor downloads.
+ * It also refuses a secret key outright. Those bypass row-level security,
+ * and anything with a VITE_ prefix is compiled into the bundle every visitor
+ * downloads.
+ *
+ * Supabase has two generations of keys and both are still in circulation:
+ *
+ *   legacy      anon / service_role     JWTs, start with "eyJ", role in the payload
+ *   current     sb_publishable_ / sb_secret_     opaque, role in the prefix
+ *
+ * Either publishable form works here. Neither secret form does.
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -57,29 +64,43 @@ if (!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(url)) {
   );
 }
 
-if (!key.startsWith('eyJ')) {
+const SECRET_WARNING =
+  '\n\n  It bypasses all row-level security, and VITE_ variables are compiled\n' +
+  '  into the JavaScript every visitor downloads - publishing it would let\n' +
+  '  anyone read and delete every row in your database.\n\n' +
+  '  If you have already pasted or committed it anywhere, revoke it:\n' +
+  '  Project Settings -> API Keys -> revoke, then issue a new one.';
+
+let role: string;
+
+if (key.startsWith('sb_secret_')) {
+  die('That is a secret key. Do not use it here.' + SECRET_WARNING + '\n\n  Use the sb_publishable_ key instead.');
+} else if (key.startsWith('sb_publishable_')) {
+  role = 'publishable';
+} else if (key.startsWith('eyJ')) {
+  // Legacy JWT key - the role is a claim inside the payload.
+  const claim = jwtRole(key);
+
+  if (claim === 'service_role') {
+    die('That is the service_role key. Do not use it here.' + SECRET_WARNING + '\n\n  Use the "anon / public" key instead.');
+  }
+
+  if (claim !== 'anon') {
+    console.warn(
+      `\n  Warning: this key's role is ${claim ?? 'unreadable'}, not "anon".\n` +
+        '  Writing it anyway, but check you copied the anon / public key.',
+    );
+  }
+
+  role = claim ?? 'unknown';
+} else {
   die(
-    'That does not look like an anon key. It should be a long string\n' +
-      '  starting with "eyJ", copied from Project Settings -> API.',
-  );
-}
-
-const role = jwtRole(key);
-
-if (role === 'service_role') {
-  die(
-    'That is the service_role key. Do not use it here.\n\n' +
-      '  It bypasses all row-level security, and VITE_ variables are compiled\n' +
-      '  into the JavaScript every visitor downloads - publishing it would let\n' +
-      '  anyone read and delete every row in your database.\n\n' +
-      '  Copy the "anon / public" key instead.',
-  );
-}
-
-if (role !== 'anon') {
-  console.warn(
-    `\n  Warning: this key's role is ${role ?? 'unreadable'}, not "anon".\n` +
-      '  Writing it anyway, but check you copied the anon / public key.',
+    `That is not a key this app can use:\n    ${key.slice(0, 24)}...\n\n` +
+      '  Expected one of:\n' +
+      '    sb_publishable_...   (current)\n' +
+      '    eyJ...               (legacy anon key)\n\n' +
+      '  Both are under Project Settings -> API Keys. A bare UUID is the JWT\n' +
+      '  signing key id, which is something else entirely.',
   );
 }
 

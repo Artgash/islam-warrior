@@ -222,13 +222,16 @@ export default function SetupPage() {
 
         <Step number={3} title="Copy your two keys" icon={<KeyRound className="size-4" />} done={configured}>
           <p>
-            From Project Settings → API, copy the <strong>Project URL</strong> and the{' '}
-            <strong>anon / public</strong> key. Then run this in the project folder — it writes{' '}
+            From Project Settings → API Keys, copy the <strong>Project URL</strong> and the{' '}
+            <strong>publishable</strong> key — the one starting{' '}
+            <code className="text-gold">sb_publishable_</code>. Older projects call it{' '}
+            <strong>anon / public</strong> and it starts <code className="text-gold">eyJ</code>;
+            either works. Then run this in the project folder — it writes{' '}
             <code className="text-gold">.env.local</code> for you and rejects the wrong key:
           </p>
           <CopyBox
             label="connect command"
-            value="npm run connect -- https://YOUR-REF.supabase.co YOUR-ANON-KEY"
+            value="npm run connect -- https://YOUR-REF.supabase.co sb_publishable_YOUR_KEY"
           />
           <p className="text-xs text-muted/80">
             Restart the dev server afterwards. Vite only reads env files at startup, so a running
@@ -243,9 +246,10 @@ export default function SetupPage() {
           <div className="flex items-start gap-2 rounded-lg border border-danger/40 bg-danger/5 p-2.5">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-danger" />
             <p className="text-xs">
-              Use the <strong>anon</strong> key only. Never give{' '}
-              <code>service_role</code> a <code>VITE_</code> prefix — that prefix ships it to every
-              visitor&rsquo;s browser, and it bypasses all security.
+              Never use the secret key — <code>sb_secret_</code> or{' '}
+              <code>service_role</code>. The <code>VITE_</code> prefix ships a value to every
+              visitor&rsquo;s browser, and those keys bypass all security. If one has been pasted
+              or committed anywhere, revoke it and issue a new one.
             </p>
           </div>
         </Step>

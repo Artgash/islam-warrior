@@ -72,17 +72,26 @@ reset, rank decay and Iblis sweep depend on it.
 
 ## 3. Point the app at it
 
-**Project Settings → API.** Copy the **Project URL** and the **anon / public**
-key, then run:
+**Project Settings → API Keys.** Copy the **Project URL** and the
+**publishable** key, then run:
 
 ```bash
-npm run connect -- https://<project-ref>.supabase.co <the anon / public key>
+npm run connect -- https://<project-ref>.supabase.co sb_publishable_<rest>
 ```
 
-That writes `.env.local` (gitignored) after checking both values. It refuses a
-`service_role` key outright and warns on anything whose role claim is not
-`anon`, because a malformed key fails silently — the app just falls back to
-local mode without saying why.
+Supabase has two generations of keys and both still work:
+
+| | Safe in the browser | Never in the browser |
+| --- | --- | --- |
+| Current | `sb_publishable_...` | `sb_secret_...` |
+| Legacy | `anon` (`eyJ...`) | `service_role` (`eyJ...`) |
+
+`connect` accepts either publishable form, refuses either secret form, and
+writes `.env.local` (gitignored). The validation is there because a wrong key
+fails silently — the app falls back to local mode without saying why.
+
+A bare UUID from that page is the **JWT signing key id**, not a key. It is not
+used here.
 
 To write the file by hand instead:
 
