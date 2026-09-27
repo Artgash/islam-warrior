@@ -75,15 +75,31 @@ function splitSeed(seed: string): { essential: string; bulk: string } {
 mkdirSync(OUT, { recursive: true });
 console.log('Writing paste-ready SQL to supabase/paste/\n');
 
+const tables = read('0001_schema.sql');
+const security = read('0002_rls.sql');
+const logic = read('0003_functions.sql');
+const { essential, bulk } = splitSeed(read('0004_seed.sql'));
+
+// One paste beats four. Files 1-3 open no transaction of their own and the
+// seed opens exactly one, so concatenating them runs cleanly in order.
+write(
+  '0-everything.sql',
+  banner(
+    'EVERYTHING - paste this one file and press run',
+    'Tables, security, logic and content in the order they have to happen. Nothing else is required.',
+  ) +
+    [tables, security, logic, essential].join('\n\n'),
+);
+
 write(
   '1-tables.sql',
-  banner('STEP 1 of 4 - tables', 'Run this first. Creates every table.') + read('0001_schema.sql'),
+  banner('STEP 1 of 4 - tables', 'Only needed if you are running the steps separately.') + tables,
 );
 
 write(
   '2-security.sql',
   banner('STEP 2 of 4 - row-level security', 'Run after step 1. Nothing is readable until this runs.') +
-    read('0002_rls.sql'),
+    security,
 );
 
 write(
@@ -91,10 +107,8 @@ write(
   banner(
     'STEP 3 of 4 - functions, triggers, leaderboard views',
     'If this fails on pg_cron, enable that extension and re-run. Only the scheduled jobs need it.',
-  ) + read('0003_functions.sql'),
+  ) + logic,
 );
-
-const { essential, bulk } = splitSeed(read('0004_seed.sql'));
 
 write(
   '4-content.sql',
@@ -113,4 +127,8 @@ write(
   ) + bulk,
 );
 
-console.log('\nDone. Paste files 1 to 4 in order; 5 is optional.');
+console.log(
+  '\nDone. Paste 0-everything.sql and press run - that is the whole setup.' +
+    '\nFiles 1-4 are the same SQL split up, if you would rather go step by step.' +
+    '\nFile 5 is optional and not needed by the app.',
+);

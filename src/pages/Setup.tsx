@@ -191,17 +191,19 @@ export default function SetupPage() {
 
         <Step number={2} title="Create the tables" icon={<Terminal className="size-4" />}>
           <p>
-            Open the SQL editor and run the four files from{' '}
-            <code className="text-gold">supabase/paste/</code> <strong>in order</strong>. Paste
-            one, press run, wait for success, then the next. All four are small enough for the
-            browser editor.
+            Open <code className="text-gold">supabase/paste/0-everything.sql</code>, select all,
+            paste it into the SQL editor and press run. That is the whole setup — one paste, about
+            75 KB. You are not writing SQL, only running a file that is already written.
           </p>
-          <ol className="ml-4 list-decimal space-y-0.5 text-xs">
-            <li><code>1-tables.sql</code> — 36 tables</li>
-            <li><code>2-security.sql</code> — row-level security</li>
-            <li><code>3-logic.sql</code> — triggers and leaderboard views</li>
-            <li><code>4-content.sql</code> — ranks, taunts, gear, achievements</li>
-          </ol>
+          <p className="text-xs text-muted/80">
+            It creates 36 tables, turns on row-level security, adds the triggers and leaderboard
+            views, and loads the ranks, taunts, gear and achievements.
+          </p>
+          <p className="text-xs text-muted/80">
+            Prefer smaller pieces? <code>1-tables.sql</code>, <code>2-security.sql</code>,{' '}
+            <code>3-logic.sql</code> and <code>4-content.sql</code> are the same SQL split up. Run
+            them <strong>in order</strong>.
+          </p>
           <div className="flex flex-wrap gap-2">
             <OpenLink href={LINKS.sqlEditor} primary>
               SQL editor

@@ -24,9 +24,18 @@ Provisioning takes a couple of minutes.
 
 ## 2. Create the tables
 
-**Project → SQL Editor → New query.** Run these four files **in order**, from
-`supabase/paste/` in this repo. Paste the whole contents of each, run it, wait
-for success, then move to the next:
+**Project → SQL Editor → New query.** Paste the whole of
+`supabase/paste/0-everything.sql` (75 KB) and press run. That is the entire
+setup.
+
+Supabase is Postgres, so the tables have to be defined in SQL — but the SQL
+is already written. Running this file is a copy and a paste, not a database
+exercise. Building the same thing by hand in the Table Editor would mean 36
+tables and every column, foreign key and policy clicked out individually,
+plus triggers and views the Table Editor cannot create at all.
+
+If you would rather go in stages, the same SQL is split into four files to be
+run **in order**:
 
 | Order | File | Size | What it does |
 | --- | --- | --- | --- |
@@ -35,11 +44,11 @@ for success, then move to the next:
 | 3 | `3-logic.sql` | 20 KB | Triggers, leaderboard views, scheduled jobs |
 | 4 | `4-content.sql` | 24 KB | Ranks, taunts, gear, consumables, achievements, seasons |
 
-These are generated from `supabase/migrations/` by `npm run sql:paste`. The
-migrations remain the source of truth; the split exists because the original
-`0004_seed.sql` is ~620 KB and the browser SQL editor is unreliable at that
-size — it hangs the tab or times out mid-statement, leaving a half-applied
-seed with no clear error.
+All of these are generated from `supabase/migrations/` by `npm run sql:paste`.
+The migrations remain the source of truth; the split exists because the
+original `0004_seed.sql` is ~620 KB and the browser SQL editor is unreliable
+at that size — it hangs the tab or times out mid-statement, leaving a
+half-applied seed with no clear error.
 
 ### The fifth file is optional — skip it
 

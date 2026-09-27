@@ -23,6 +23,12 @@ const PASTE_DIR = join(process.cwd(), 'supabase', 'paste');
 const ENV_PATH = join(process.cwd(), '.env.local');
 const OPTIONAL = '5-zones-monsters-optional.sql';
 
+/**
+ * The all-in-one file is the same SQL as 1-4 concatenated, for people
+ * pasting by hand. Running it here as well would apply everything twice.
+ */
+const COMBINED = '0-everything.sql';
+
 function die(message: string): never {
   console.error(`\n  ${message}\n`);
   process.exit(1);
@@ -87,6 +93,7 @@ async function main(): Promise<void> {
 
   const files = readdirSync(PASTE_DIR)
     .filter((f) => f.endsWith('.sql'))
+    .filter((f) => f !== COMBINED)
     .filter((f) => withContent || f !== OPTIONAL)
     .sort();
 
