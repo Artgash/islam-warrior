@@ -14,7 +14,7 @@
 import type { AppUser } from '@/types';
 import { isSupabaseConfigured, requireSupabase, supabase } from '@/lib/supabase';
 import { readJsonSync, writeJson, removeKey } from '@/platform/storage';
-import { uid } from '@/lib/utils';
+import { uuid } from '@/lib/utils';
 
 const LOCAL_USERS_KEY = 'auth:users';
 const LOCAL_SESSION_KEY = 'auth:session';
@@ -105,7 +105,10 @@ export async function signUp(email: string, password: string): Promise<AuthResul
   }
 
   const account: LocalAccount = {
-    id: uid('user_'),
+    // A bare UUID even in local mode: this id is written to `user_id` on
+    // characters, habits and logs, and every one of those columns is `uuid`.
+    // A prefixed id here would break the first cloud sync.
+    id: uuid(),
     email: normalized,
     secret: obscure(password),
     created_at: new Date().toISOString(),

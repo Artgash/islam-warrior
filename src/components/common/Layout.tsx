@@ -2,6 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Bell,
+  Database,
   Flame,
   Map,
   ShieldHalf,
@@ -157,6 +158,12 @@ export const SECONDARY_NAV = [
   { to: '/iblis', label: 'Iblis', icon: Flame, description: 'Every word he has said to you' },
   { to: '/season', label: 'Season', icon: Map, description: 'The pass and the current season' },
   { to: '/profile', label: 'Profile', icon: User, description: 'Achievements and history' },
+  {
+    to: '/setup',
+    label: 'Connect a database',
+    icon: Database,
+    description: 'Real accounts, real leaderboards',
+  },
 ];
 
 /* ------------------------------------------------------------------ */

@@ -11,6 +11,7 @@ import { createIblisSlice } from './iblisSlice';
 import { createGuildSlice } from './guildSlice';
 import { createAchievementsSlice } from './achievementsSlice';
 import { createUiSlice } from './uiSlice';
+import { PERSIST_VERSION, migratePersisted } from './migrations';
 
 export const useGameStore = create<GameStore>()(
   persist(
@@ -27,8 +28,14 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'game-state',
-      version: 1,
+      version: PERSIST_VERSION,
       storage: createJSONStorage(() => zustandStorage),
+
+      /**
+       * Repairs saves written before ids were UUIDs. Without this, anyone who
+       * played before the fix would still fail their first cloud sync.
+       */
+      migrate: migratePersisted,
 
       /**
        * Only durable game state is persisted. Transient battle flags,

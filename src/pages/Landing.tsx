@@ -258,8 +258,18 @@ export default function LandingPage() {
         {!isSupabaseConfigured && (
           <p className="mt-4 rounded-lg border border-edge bg-card/60 px-3 py-2 text-center text-[11px] leading-relaxed text-muted">
             Running in <span className="text-gold">local mode</span> — your account and progress
-            live in this browser only. Add Supabase credentials to <code>.env.local</code> for
-            cloud sync, guilds and real leaderboards.
+            live in this browser only, and the leaderboards show a practice ladder rather than real
+            players.{' '}
+            <a
+              href="https://supabase.com/dashboard/new"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-gold underline underline-offset-4"
+            >
+              Create a free database
+            </a>{' '}
+            to turn on real accounts — the app has a guided walkthrough at{' '}
+            <code className="text-gold">/setup</code>.
           </p>
         )}
 
