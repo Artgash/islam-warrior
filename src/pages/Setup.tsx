@@ -191,39 +191,49 @@ export default function SetupPage() {
 
         <Step number={2} title="Create the tables" icon={<Terminal className="size-4" />}>
           <p>
-            Open the SQL editor and run the four migration files from{' '}
-            <code className="text-gold">supabase/migrations/</code> <strong>in order</strong>.
-            Paste each one, run it, wait for success, then the next.
+            Open the SQL editor and run the four files from{' '}
+            <code className="text-gold">supabase/paste/</code> <strong>in order</strong>. Paste
+            one, press run, wait for success, then the next. All four are small enough for the
+            browser editor.
           </p>
           <ol className="ml-4 list-decimal space-y-0.5 text-xs">
-            <li><code>0001_schema.sql</code> — 36 tables</li>
-            <li><code>0002_rls.sql</code> — row-level security</li>
-            <li><code>0003_functions.sql</code> — triggers and leaderboard views</li>
-            <li><code>0004_seed.sql</code> — 66 zones, 1,056 monsters, all content</li>
+            <li><code>1-tables.sql</code> — 36 tables</li>
+            <li><code>2-security.sql</code> — row-level security</li>
+            <li><code>3-logic.sql</code> — triggers and leaderboard views</li>
+            <li><code>4-content.sql</code> — ranks, taunts, gear, achievements</li>
           </ol>
           <div className="flex flex-wrap gap-2">
             <OpenLink href={LINKS.sqlEditor} primary>
               SQL editor
             </OpenLink>
-            <OpenLink href={`${LINKS.repo}/tree/main/supabase/migrations`}>
-              The migration files
-            </OpenLink>
+            <OpenLink href={`${LINKS.repo}/tree/main/supabase/paste`}>The four files</OpenLink>
             <OpenLink href={LINKS.extensions}>Extensions</OpenLink>
           </div>
           <p className="text-xs text-muted/80">
-            If <code>0003</code> errors on <code>pg_cron</code>, enable that extension and re-run
-            it. Only the scheduled jobs depend on it.
+            If <code>3-logic.sql</code> errors on <code>pg_cron</code>, enable that extension and
+            re-run it. Only the scheduled jobs depend on it — everything else works without them.
+          </p>
+          <p className="text-xs text-muted/80">
+            There is a fifth file, <code>5-zones-monsters-optional.sql</code>. Skip it. All 66
+            zones and 1,056 monsters already ship inside the app; that file only makes them
+            queryable in SQL, and at 595 KB the browser editor tends to choke on it.
           </p>
         </Step>
 
         <Step number={3} title="Copy your two keys" icon={<KeyRound className="size-4" />} done={configured}>
           <p>
             From Project Settings → API, copy the <strong>Project URL</strong> and the{' '}
-            <strong>anon / public</strong> key into a <code className="text-gold">.env.local</code>{' '}
-            file in the project root, then restart the dev server.
+            <strong>anon / public</strong> key. Then run this in the project folder — it writes{' '}
+            <code className="text-gold">.env.local</code> for you and rejects the wrong key:
           </p>
-          <CopyBox label="env template" value="VITE_SUPABASE_URL=" />
-          <CopyBox label="env template" value="VITE_SUPABASE_ANON_KEY=" />
+          <CopyBox
+            label="connect command"
+            value="npm run connect -- https://YOUR-REF.supabase.co YOUR-ANON-KEY"
+          />
+          <p className="text-xs text-muted/80">
+            Restart the dev server afterwards. Vite only reads env files at startup, so a running
+            server will keep reporting local mode however correct the file is.
+          </p>
           <div className="flex flex-wrap gap-2">
             <OpenLink href={LINKS.apiKeys} primary>
               API keys

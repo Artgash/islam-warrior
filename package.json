@@ -13,6 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "vite-node scripts/generate-seed.ts",
+    "sql:paste": "vite-node scripts/split-seed.ts",
+    "connect": "vite-node scripts/connect.ts",
+    "db:push": "supabase db push",
     "art:prompts": "vite-node scripts/art-prompts.ts"
   },
   "dependencies": {
@@ -61,6 +64,7 @@
     "autoprefixer": "^10.4.20",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
+    "supabase": "^2.118.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
     "vite": "^6.0.7",

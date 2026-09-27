@@ -25,28 +25,41 @@ Provisioning takes a couple of minutes.
 ## 2. Create the tables
 
 **Project → SQL Editor → New query.** Run these four files **in order**, from
-`supabase/migrations/` in this repo. Paste the whole contents of each, run it,
-wait for success, then move to the next:
+`supabase/paste/` in this repo. Paste the whole contents of each, run it, wait
+for success, then move to the next:
 
-| Order | File | What it does |
-| --- | --- | --- |
-| 1 | `0001_schema.sql` | 36 tables, enums, constraints, indexes |
-| 2 | `0002_rls.sql` | Row-level security on every table |
-| 3 | `0003_functions.sql` | Triggers, leaderboard views, scheduled jobs |
-| 4 | `0004_seed.sql` | 66 zones, 1,056 monsters, gear, ranks, taunts, achievements |
+| Order | File | Size | What it does |
+| --- | --- | --- | --- |
+| 1 | `1-tables.sql` | 22 KB | 36 tables, enums, constraints, indexes |
+| 2 | `2-security.sql` | 10 KB | Row-level security on every table |
+| 3 | `3-logic.sql` | 20 KB | Triggers, leaderboard views, scheduled jobs |
+| 4 | `4-content.sql` | 24 KB | Ranks, taunts, gear, consumables, achievements, seasons |
 
-`0004_seed.sql` is large (~618 KB). If the editor struggles with it, use the
-CLI instead:
+These are generated from `supabase/migrations/` by `npm run sql:paste`. The
+migrations remain the source of truth; the split exists because the original
+`0004_seed.sql` is ~620 KB and the browser SQL editor is unreliable at that
+size — it hangs the tab or times out mid-statement, leaving a half-applied
+seed with no clear error.
+
+### The fifth file is optional — skip it
+
+`5-zones-monsters-optional.sql` (595 KB) holds the 66 zones and 1,056
+monsters. **The app does not need it.** All of that content ships in the
+bundle from `src/game/**`, and the client never queries those tables. Only
+two content tables are read server-side — `ranks` and `iblis_taunts` — and
+both are in `4-content.sql`.
+
+Run it only if you want the content queryable in SQL, and prefer the CLI:
 
 ```bash
-npm install -g supabase
-supabase login
-supabase link --project-ref <your-project-ref>
-supabase db push
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
+npm run db:push
 ```
 
 Your project ref is the subdomain in your project URL:
-`https://<project-ref>.supabase.co`.
+`https://<project-ref>.supabase.co`. The CLI is already a devDependency, so
+there is nothing to install globally.
 
 ### If `0003` complains about `pg_cron`
 
@@ -59,15 +72,28 @@ reset, rank decay and Iblis sweep depend on it.
 
 ## 3. Point the app at it
 
-**Project Settings → API.** Copy two values:
+**Project Settings → API.** Copy the **Project URL** and the **anon / public**
+key, then run:
 
 ```bash
-# .env.local  (create this file in the project root - it is gitignored)
+npm run connect -- https://<project-ref>.supabase.co <the anon / public key>
+```
+
+That writes `.env.local` (gitignored) after checking both values. It refuses a
+`service_role` key outright and warns on anything whose role claim is not
+`anon`, because a malformed key fails silently — the app just falls back to
+local mode without saying why.
+
+To write the file by hand instead:
+
+```bash
+# .env.local  (project root - gitignored)
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<the anon / public key>
 ```
 
-Restart the dev server. **Settings → Connection** should now say
+Restart the dev server either way — Vite reads env files only at startup, so a
+running server keeps reporting local mode however correct the file is. **Settings → Connection** should now say
 **Connected** instead of **Local mode**.
 
 Add the same two variables in **Vercel → your project → Settings →
