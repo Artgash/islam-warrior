@@ -97,12 +97,6 @@ const WRONG_REGION = /tenant.{0,40}not found/i;
 /** Older projects sit behind aws-0-, newer ones behind aws-1-. */
 const HOST_PREFIXES = ['aws-0', 'aws-1'];
 
-function poolerUrl(ref: string, host: string, password: string): string {
-  const user = encodeURIComponent(`postgres.${ref}`);
-  const pass = encodeURIComponent(password);
-  return `postgresql://${user}:${pass}@${host}:5432/postgres`;
-}
-
 /** Every host worth trying, cheapest guesses first. */
 function candidateHosts(pinned: string | undefined): string[] {
   const regions = pinned ? [pinned] : REGIONS;
@@ -128,12 +122,30 @@ function password(): string {
   );
 }
 
-function makeClient(connectionString: string, timeout = 15_000): Client {
+/** Settings shared by every attempt. */
+const COMMON = {
+  database: 'postgres',
+  ssl: { rejectUnauthorized: false },
+  // The content file is large; give it room before giving up.
+  statement_timeout: 600_000,
+} as const;
+
+/**
+ * Discrete fields rather than a connection string, deliberately.
+ *
+ * pg does not percent-decode the password out of a connection string, so
+ * any password containing a URL-significant character is wrong whichever
+ * way you write it: encode it and the escape arrives literally, leave it
+ * raw and a `#` truncates the rest. Passing the fields separately means no
+ * parsing happens at all.
+ */
+function makeClient(host: string, ref: string, pass: string, timeout = 15_000): Client {
   return new Client({
-    connectionString,
-    ssl: { rejectUnauthorized: false },
-    // The content file is large; give it room before giving up.
-    statement_timeout: 600_000,
+    ...COMMON,
+    host,
+    port: 5432,
+    user: `postgres.${ref}`,
+    password: pass,
     connectionTimeoutMillis: timeout,
   });
 }
@@ -142,7 +154,12 @@ function makeClient(connectionString: string, timeout = 15_000): Client {
 async function connect(ref: string, secret: string | undefined): Promise<Client> {
   const explicit = process.env.SUPABASE_DB_URL?.trim();
   if (explicit) {
-    const client = makeClient(explicit, 30_000);
+    // An explicit string is the caller's own, so pass it through untouched.
+    const client = new Client({
+      ...COMMON,
+      connectionString: explicit,
+      connectionTimeoutMillis: 30_000,
+    });
     await client.connect();
     return client;
   }
@@ -153,7 +170,7 @@ async function connect(ref: string, secret: string | undefined): Promise<Client>
   let lastError = '';
 
   for (const host of hosts) {
-    const client = makeClient(poolerUrl(ref, host, pass));
+    const client = makeClient(host, ref, pass);
     try {
       await client.connect();
       console.log(`  host      ${host}\n`);
