@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +17,7 @@ import {
   signInWithGoogle,
   requestPasswordReset,
   resendConfirmation,
+  enabledOAuthProviders,
 } from '@/api/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { TOTAL_ZONES, IBLIS_HP_DISPLAY } from '@/game/constants';
@@ -39,6 +40,21 @@ export default function LandingPage() {
   const [busy, setBusy] = useState(false);
   const [awaitingEmail, setAwaitingEmail] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
+
+  // Only offer Google when the project actually has it switched on -
+  // otherwise the button is a dead end that fails with "Unsupported
+  // provider" after the player has already committed to it.
+  const [googleReady, setGoogleReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void enabledOAuthProviders().then((providers) => {
+      if (!cancelled) setGoogleReady(providers.has('google'));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const form = useForm<Credentials>({
     resolver: zodResolver(credentialsSchema),
@@ -252,7 +268,7 @@ export default function LandingPage() {
             </Button>
           </form>
 
-          {isSupabaseConfigured && mode !== 'reset' && (
+          {googleReady && mode !== 'reset' && (
             <>
               <StarDivider label="or" className="my-4" />
               <Button variant="secondary" size="block" onClick={onGoogle} disabled={busy}>

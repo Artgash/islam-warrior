@@ -44,3 +44,16 @@ describe('friendlyAuthError', () => {
     expect(friendlyAuthError('Something entirely new')).toBe('Something entirely new');
   });
 });
+
+describe('enabledOAuthProviders', () => {
+  it('offers nothing when there is no project to ask', async () => {
+    // The suite runs with credentials blanked, which is also what a local
+    // clone looks like. Offering Google there would be a button that cannot
+    // work, so the safe answer is none.
+    const { enabledOAuthProviders } = await import('../auth');
+    const providers = await enabledOAuthProviders();
+
+    expect(providers.size).toBe(0);
+    expect(providers.has('google')).toBe(false);
+  });
+});

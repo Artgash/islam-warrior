@@ -200,6 +200,42 @@ export async function signIn(email: string, password: string): Promise<AuthResul
   return { user: toAppUser(account), created: false };
 }
 
+/**
+ * Which third-party sign-in providers this project actually has enabled.
+ *
+ * Asked at runtime rather than kept in a build-time flag, because a flag
+ * drifts: turning Google off in the dashboard would leave a button that
+ * fails with "Unsupported provider", and turning it on would need a
+ * redeploy before anyone could use it. The auth service already publishes
+ * the answer, so the button can simply match it.
+ *
+ * A failure here means no third-party buttons, which is the safe way to be
+ * wrong - email sign-in still works.
+ */
+let providerCache: Promise<Set<string>> | null = null;
+
+export function enabledOAuthProviders(): Promise<Set<string>> {
+  if (providerCache) return providerCache;
+
+  if (!isSupabaseConfigured) {
+    providerCache = Promise.resolve(new Set<string>());
+    return providerCache;
+  }
+
+  const base = import.meta.env.VITE_SUPABASE_URL as string;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+  providerCache = fetch(`${base}/auth/v1/settings`, { headers: { apikey: key } })
+    .then((response) => (response.ok ? response.json() : null))
+    .then((body: { external?: Record<string, boolean> } | null) => {
+      const external = body?.external ?? {};
+      return new Set(Object.keys(external).filter((name) => external[name]));
+    })
+    .catch(() => new Set<string>());
+
+  return providerCache;
+}
+
 export async function signInWithGoogle(): Promise<void> {
   if (!isSupabaseConfigured) {
     throw new Error('Google sign-in requires a configured Supabase project.');
