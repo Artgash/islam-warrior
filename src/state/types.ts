@@ -51,6 +51,8 @@ export interface UserSlice {
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
   signOutLocal: () => void;
+  /** Wipe everything belonging to an account, keeping device preferences. */
+  clearAccountData: () => void;
 }
 
 export interface OnboardingInput {

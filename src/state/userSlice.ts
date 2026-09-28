@@ -22,13 +22,56 @@ export const DEFAULT_SETTINGS: Settings = {
   },
 };
 
+/**
+ * Everything that belongs to one account.
+ *
+ * Settings are deliberately absent: sound, language and reduced motion are
+ * properties of the device and the person using it, not of the save.
+ *
+ * Built fresh each call rather than shared, so no two clears ever hand out
+ * the same array instance.
+ */
+function emptyAccountState() {
+  return {
+    character: null,
+    habits: [],
+    logs: [],
+    combatLog: [],
+    inventory: [],
+    equipped: {},
+    activeEffects: [],
+    legendaryFragments: 0,
+    coinLog: [],
+    taunts: [],
+    guildId: null,
+    achievements: [],
+    notifications: [],
+  };
+}
+
 export const createUserSlice: SliceCreator<UserSlice> = (set, get) => ({
   user: null,
   settings: DEFAULT_SETTINGS,
   hydrated: false,
   notifications: [],
 
-  setUser: (user) => set({ user }),
+  /**
+   * Adopting a user also enforces who the persisted save belongs to.
+   *
+   * The save outlives the session, so without this check a stale local
+   * account signs you straight into someone else's progress on boot, and
+   * a save made under one account follows you into the next one.
+   */
+  setUser: (user) => {
+    const current = get().character;
+
+    if (user && current && current.user_id !== user.id) {
+      set({ ...emptyAccountState(), user });
+      return;
+    }
+
+    set({ user });
+  },
 
   setHydrated: (value) => set({ hydrated: value }),
 
@@ -46,6 +89,13 @@ export const createUserSlice: SliceCreator<UserSlice> = (set, get) => ({
     try {
       const remote = await pullSnapshot(userId);
       if (!remote) return 'offline';
+
+      // A save belonging to someone else must not be pushed into this
+      // account, and must not be weighed against it either.
+      const held = get().character;
+      if (held && held.user_id !== userId) {
+        set({ ...emptyAccountState() });
+      }
 
       const local = get().character;
 
@@ -120,5 +170,11 @@ export const createUserSlice: SliceCreator<UserSlice> = (set, get) => ({
 
   clearNotifications: () => set({ notifications: [] }),
 
-  signOutLocal: () => set({ user: null }),
+  clearAccountData: () => set({ ...emptyAccountState() }),
+
+  /**
+   * Signing out has to take the save with it. Leaving it behind is what let
+   * the next person to open the app land inside the previous account.
+   */
+  signOutLocal: () => set({ ...emptyAccountState(), user: null }),
 });

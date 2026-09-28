@@ -33,7 +33,6 @@ type Mode = 'signin' | 'signup' | 'reset';
 export default function LandingPage() {
   const navigate = useNavigate();
   const setUser = useGameStore((s) => s.setUser);
-  const character = useGameStore((s) => s.character);
   const hydrateFromCloud = useGameStore((s) => s.hydrateFromCloud);
 
   const [mode, setMode] = useState<Mode>('signin');
@@ -83,8 +82,11 @@ export default function LandingPage() {
         toast.success(mode === 'signup' ? 'Account created.' : 'Welcome back.');
       }
 
+      // Read the store rather than the closure: `character` was captured
+      // before hydration and may belong to the account just signed out of,
+      // which is what sent returning players back through onboarding.
       const restored = useGameStore.getState().character;
-      navigate(restored ?? character ? '/' : '/onboarding', { replace: true });
+      navigate(restored ? '/' : '/onboarding', { replace: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Something went wrong.';
 

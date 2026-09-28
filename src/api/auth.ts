@@ -284,11 +284,13 @@ export async function deleteAccount(userId: string): Promise<void> {
 }
 
 /** Subscribe to auth changes; returns an unsubscribe function. */
-export function onAuthChange(callback: (user: AppUser | null) => void): () => void {
+export function onAuthChange(
+  callback: (user: AppUser | null, event: string) => void,
+): () => void {
   if (isSupabaseConfigured && supabase) {
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session?.user) {
-        callback(null);
+        callback(null, event);
         return;
       }
       callback({
@@ -297,7 +299,7 @@ export function onAuthChange(callback: (user: AppUser | null) => void): () => vo
         created_at: session.user.created_at,
         is_admin: Boolean(session.user.app_metadata?.is_admin),
         onboarded: Boolean(session.user.user_metadata?.onboarded),
-      });
+      }, event);
     });
     return () => data.subscription.unsubscribe();
   }

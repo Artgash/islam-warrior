@@ -9,6 +9,7 @@ import { useDailyRollover } from '@/hooks/useGame';
 import { AchievementToast } from '@/components/battle/Overlays';
 import { TooltipProvider } from '@/components/ui/misc';
 import { getCurrentUser, onAuthChange } from '@/api/auth';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { setMusicEnabled, setSoundEnabled, unlockAudio } from '@/platform/sound';
 
 const queryClient = new QueryClient({
@@ -58,14 +59,36 @@ export default function App() {
     void getCurrentUser()
       .then((user) => {
         if (cancelled) return;
-        // Only adopt a remote session; a persisted local user already loaded.
-        if (user) setUser(user);
+
+        if (user) {
+          setUser(user);
+          return;
+        }
+
+        // With a database configured, a session is the only thing that
+        // signs anyone in. The persisted user outlives it, so trusting it
+        // here drops you into a stale account you never signed into.
+        if (isSupabaseConfigured) {
+          useGameStore.getState().signOutLocal();
+        }
       })
       .finally(() => {
         if (!cancelled) setHydrated(true);
       });
 
-    const unsubscribe = onAuthChange((user) => setUser(user));
+    const unsubscribe = onAuthChange((user, event) => {
+      if (user) {
+        setUser(user);
+        return;
+      }
+
+      // Only an explicit sign-out clears the save. INITIAL_SESSION also
+      // arrives with no user while the session is still being read back,
+      // and acting on that would wipe a save on every cold start.
+      if (event === 'SIGNED_OUT') {
+        useGameStore.getState().signOutLocal();
+      }
+    });
 
     return () => {
       cancelled = true;

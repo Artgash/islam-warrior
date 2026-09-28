@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { AlertTriangle, LogOut, Trash2 } from 'lucide-react';
+import { AlertTriangle, Eraser, LogOut, Trash2 } from 'lucide-react';
 import type { NotificationType } from '@/types';
 import { useGameStore } from '@/state';
 import { PageShell } from '@/components/common/Layout';
@@ -53,6 +53,17 @@ export default function SettingsPage() {
   const onSignOut = async () => {
     await signOut();
     useGameStore.getState().signOutLocal();
+    navigate('/auth', { replace: true });
+  };
+
+  /**
+   * For a browser holding a save from before the database existed, or from
+   * an account someone else signed into here. The cloud copy is untouched.
+   */
+  const onClearDevice = async () => {
+    await signOut().catch(() => undefined);
+    useGameStore.getState().signOutLocal();
+    toast.success('This device is clean. Sign in to pull your account back.');
     navigate('/auth', { replace: true });
   };
 
@@ -122,6 +133,16 @@ export default function SettingsPage() {
           <LogOut className="size-4" />
           Sign out
         </Button>
+
+        <Button variant="secondary" size="block" onClick={onClearDevice}>
+          <Eraser className="size-4" />
+          Clear data on this device
+        </Button>
+
+        <p className="text-[11px] leading-relaxed text-muted/80">
+          Removes the copy stored in this browser and signs you out. Anything already synced
+          stays in the database and comes back when you sign in.
+        </p>
       </div>
 
       {/* Notifications ---------------------------------------------- */}
