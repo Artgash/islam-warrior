@@ -19,19 +19,53 @@ import { Button } from '@/components/ui/button';
 import { StarDivider, GeometricField } from '@/components/common/StarDivider';
 import { useGameStore } from '@/state';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 
-/** Supabase reports failures in the query string or the hash, depending. */
-function readError(): string | null {
+interface LinkFailure {
+  message: string;
+  /** True when the account is probably fine and only the link is spent. */
+  likelyAlreadyUsed: boolean;
+}
+
+/**
+ * Supabase reports failures in the query string or the hash, depending.
+ *
+ * `otp_expired` is worth separating out. Confirmation links are single use,
+ * and mail clients pre-fetch links to build previews - so the scanner opens
+ * it, the account is confirmed, and the real tap arrives at a spent token.
+ * "Email link is invalid or has expired" is then true and badly misleading:
+ * the account usually works, and signing in normally is all that is needed.
+ */
+function readError(): LinkFailure | null {
   if (typeof window === 'undefined') return null;
 
   const query = new URLSearchParams(window.location.search);
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
 
+  const code = query.get('error_code') ?? hash.get('error_code') ?? '';
+  const reason = query.get('error') ?? hash.get('error');
   const description = query.get('error_description') ?? hash.get('error_description');
-  if (description) return description.replace(/\+/g, ' ');
 
-  const code = query.get('error') ?? hash.get('error');
-  return code ? code.replace(/_/g, ' ') : null;
+  const spent = code === 'otp_expired' || /expired|already/i.test(description ?? '');
+
+  if (spent) {
+    return {
+      message:
+        'This link had already been used. That usually means your email app opened it first ' +
+        'to preview it, which confirms the account but uses the link up.',
+      likelyAlreadyUsed: true,
+    };
+  }
+
+  if (description) {
+    return { message: description.replace(/\+/g, ' '), likelyAlreadyUsed: false };
+  }
+
+  if (reason) {
+    return { message: reason.replace(/_/g, ' '), likelyAlreadyUsed: false };
+  }
+
+  return null;
 }
 
 export default function AuthCallbackPage() {
@@ -39,7 +73,7 @@ export default function AuthCallbackPage() {
   const setUser = useGameStore((s) => s.setUser);
   const hydrateFromCloud = useGameStore((s) => s.hydrateFromCloud);
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LinkFailure | null>(null);
 
   // React runs effects twice in development; without this the whole
   // exchange would run a second time against an already-consumed code.
@@ -69,7 +103,7 @@ export default function AuthCallbackPage() {
       if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         if (exchangeError) {
-          if (!cancelled) setError(exchangeError.message);
+          if (!cancelled) setError({ message: exchangeError.message, likelyAlreadyUsed: false });
           return;
         }
       }
@@ -79,7 +113,12 @@ export default function AuthCallbackPage() {
 
       if (!session?.user) {
         if (!cancelled) {
-          setError('That confirmation link is no longer valid. Request a new one by signing in.');
+          setError({
+            message:
+              'This link had already been used, or it has expired. If you have confirmed ' +
+              'before, your account already works.',
+            likelyAlreadyUsed: true,
+          });
         }
         return;
       }
@@ -118,15 +157,24 @@ export default function AuthCallbackPage() {
       <div className="panel framed relative w-full max-w-sm p-6 text-center">
         {error ? (
           <>
-            <MailX className="mx-auto mb-3 size-8 text-danger" />
-            <h1 className="font-display text-lg text-bone">That link did not work</h1>
+            <MailX
+              className={cn(
+                'mx-auto mb-3 size-8',
+                error.likelyAlreadyUsed ? 'text-gold' : 'text-danger',
+              )}
+            />
+            <h1 className="font-display text-lg text-bone">
+              {error.likelyAlreadyUsed ? 'This link was already used' : 'That link did not work'}
+            </h1>
             <StarDivider className="my-4" />
-            <p className="text-sm leading-relaxed text-muted">{error}</p>
+            <p className="text-sm leading-relaxed text-muted">{error.message}</p>
             <p className="mt-3 text-xs text-muted/70">
-              Confirmation links expire. Signing in again sends a fresh one.
+              {error.likelyAlreadyUsed
+                ? 'Try signing in with your email and password - most likely it just works. If it says the email is not confirmed, ask for a new link from there.'
+                : 'Confirmation links expire. Signing in again sends a fresh one.'}
             </p>
             <Button size="block" className="mt-5" onClick={() => navigate('/auth', { replace: true })}>
-              Back to sign in
+              {error.likelyAlreadyUsed ? 'Sign in' : 'Back to sign in'}
             </Button>
           </>
         ) : (

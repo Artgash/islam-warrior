@@ -81,6 +81,34 @@ function setEnv(name: string, value: string, target: string): void {
   vercel(['env', 'add', name, target], value);
 }
 
+/**
+ * The stable production domain - what belongs in Supabase and what you give
+ * to people. Vercel lists every alias pointing at production; the shortest
+ * is the clean one rather than a per-deployment hash.
+ */
+async function productionDomain(project: string | undefined): Promise<string | null> {
+  const token = process.env.VERCEL_TOKEN?.trim();
+  if (!token || !project) return null;
+
+  try {
+    const response = await fetch(`https://api.vercel.com/v9/projects/${project}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) return null;
+
+    const body = (await response.json()) as {
+      targets?: { production?: { alias?: string[] } };
+    };
+
+    const aliases = body.targets?.production?.alias ?? [];
+    if (!aliases.length) return null;
+
+    return `https://${[...aliases].sort((a, b) => a.length - b.length)[0]}`;
+  } catch {
+    return null;
+  }
+}
+
 async function configureSupabase(ref: string, origin: string): Promise<boolean> {
   const token = process.env.SUPABASE_ACCESS_TOKEN?.trim();
   if (!token) return false;
@@ -111,8 +139,11 @@ async function main(): Promise<void> {
 
   console.log(`\n  Supabase project: ${ref}\n`);
 
-  // Link first so env vars attach to the right project.
-  vercel(['link', '--yes']);
+  // Link first so env vars attach to the right project. The directory name
+  // is not the project name here, and letting the CLI guess from the folder
+  // would quietly create a second project alongside the real one.
+  const project = process.env.VERCEL_PROJECT?.trim();
+  vercel(project ? ['link', '--yes', '--project', project] : ['link', '--yes']);
 
   console.log('\n  Setting environment variables\n');
   for (const target of ['production', 'preview', 'development']) {
@@ -123,12 +154,21 @@ async function main(): Promise<void> {
   console.log('\n  Deploying\n');
   const output = vercel(['deploy', '--prod', '--yes']);
 
-  const deployed = output.match(/https:\/\/[^\s]+\.vercel\.app/g)?.pop();
-  if (!deployed) {
+  const deploymentUrl = output.match(/https:\/\/[^\s]+\.vercel\.app/g)?.pop();
+  if (!deploymentUrl) {
     die(`Deployed, but no URL was printed. Check https://vercel.com/dashboard\n\n${output}`);
   }
 
-  console.log(`\n  Live at ${deployed}\n`);
+  // `vercel deploy` prints the per-deployment URL, which is not the address
+  // to hand anyone: it changes every deploy, and deployment protection
+  // answers it with a 302 to a login page. Supabase pointed at that would
+  // send every confirmation link somewhere protected and short-lived.
+  const deployed = (await productionDomain(project)) ?? deploymentUrl;
+
+  console.log(`
+  Live at ${deployed}`);
+  if (deployed !== deploymentUrl) console.log(`  (this deployment: ${deploymentUrl})`);
+  console.log('');
 
   const configured = await configureSupabase(ref, deployed);
 

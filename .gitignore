@@ -37,3 +37,6 @@ public/art/
 
 # TypeScript incremental build cache - machine-local, not source
 *.tsbuildinfo
+
+.vercel
+.env*
