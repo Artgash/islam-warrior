@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { AlertTriangle, Eraser, LogOut, Trash2 } from 'lucide-react';
+import { AlertTriangle, Eraser, Loader2, LogOut, Trash2 } from 'lucide-react';
 import type { NotificationType } from '@/types';
 import { useGameStore } from '@/state';
 import { PageShell } from '@/components/common/Layout';
@@ -50,6 +50,30 @@ export default function SettingsPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [newPassword, setNewPassword] = useState('');
 
+  const character = useGameStore((st) => st.character);
+  const renameCharacter = useGameStore((st) => st.renameCharacter);
+  const [name, setName] = useState(character?.name ?? '');
+  const [renaming, setRenaming] = useState(false);
+
+  const onRename = async () => {
+    setRenaming(true);
+    try {
+      const synced = await renameCharacter(name);
+      // Saying "changed everywhere" when the write never landed would be a
+      // lie the player only discovers from somebody else's screen.
+      if (synced) {
+        toast.success('Name changed. Everyone sees it now.');
+      } else {
+        toast.warning('Renamed on this device. It will sync when the connection is back.');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not change the name.');
+      setName(character?.name ?? '');
+    } finally {
+      setRenaming(false);
+    }
+  };
+
   const onSignOut = async () => {
     await signOut();
     useGameStore.getState().signOutLocal();
@@ -81,8 +105,43 @@ export default function SettingsPage() {
 
   return (
     <PageShell title="Settings">
+      {/* Name ---------------------------------------------------------- */}
+      {character && (
+        <>
+          <StarDivider label="Your name" />
+
+          <div className="panel space-y-3 p-4">
+            <div>
+              <Input
+                id="character-name"
+                value={name}
+                maxLength={20}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="What should we call you?"
+                aria-label="Character name"
+              />
+              <p className="mt-1 text-right text-xs text-muted">{name.trim().length}/20</p>
+            </div>
+
+            <Button
+              size="block"
+              disabled={renaming || name.trim() === character.name || name.trim().length < 2}
+              onClick={onRename}
+            >
+              {renaming && <Loader2 className="size-4 animate-spin" />}
+              Save name
+            </Button>
+
+            <p className="text-[11px] leading-relaxed text-muted/80">
+              This is the name on the leaderboards, in your guild roster and on everything you
+              have ever posted in guild chat. Changing it changes all of them at once.
+            </p>
+          </div>
+        </>
+      )}
+
       {/* Connection -------------------------------------------------- */}
-      <StarDivider label="Connection" />
+      <StarDivider label="Connection" className="mt-6" />
       <ConnectionStatus />
 
       {/* Account ---------------------------------------------------- */}

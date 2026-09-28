@@ -277,9 +277,12 @@ export async function fetchMessages(guildId: string): Promise<GuildMessage[]> {
     return (localChat()[guildId] ?? []).slice(-GUILD_CHAT_HISTORY);
   }
 
+  // Read through the view, not the table: the author's name lives on their
+  // character, so resolving it per read is what makes a rename show up on
+  // everything they have ever posted.
   const client = requireSupabase();
   const { data, error } = await client
-    .from('guild_chat')
+    .from('guild_chat_view')
     .select('*')
     .eq('guild_id', guildId)
     .order('created_at', { ascending: false })
@@ -311,10 +314,27 @@ export async function sendMessage(
     return message;
   }
 
+  // guild_chat has no author_name or avatar_id column - sending the whole
+  // message object was rejected outright, which broke chat entirely in
+  // cloud mode. Insert the columns that exist, and keep the resolved name
+  // on the returned object so the sender sees their own message at once.
   const client = requireSupabase();
-  const { data, error } = await client.from('guild_chat').insert(message).select().single();
+  const { data, error } = await client
+    .from('guild_chat')
+    .insert({
+      id: message.id,
+      guild_id: message.guild_id,
+      user_id: message.user_id,
+      body: message.body,
+      created_at: message.created_at,
+    })
+    .select()
+    .single();
+
   if (error) throw new Error(error.message);
-  return data as GuildMessage;
+
+  const row = data as { id: string; guild_id: string; user_id: string; body: string; created_at: string };
+  return { ...row, author_name: character.name, avatar_id: character.avatar_id };
 }
 
 /** Realtime chat subscription. Returns an unsubscribe function. */

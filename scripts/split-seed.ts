@@ -19,7 +19,7 @@
  * Run with: npm run sql:paste
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const MIGRATIONS = join(process.cwd(), 'supabase', 'migrations');
@@ -78,6 +78,13 @@ console.log('Writing paste-ready SQL to supabase/paste/\n');
 const tables = read('0001_schema.sql');
 const security = read('0002_rls.sql');
 const logic = read('0003_functions.sql');
+
+// Migrations added after the original four. They are part of "logic" for
+// paste purposes: views and functions, no data.
+const EXTRA = ['0005_guild_chat_view.sql'];
+const extra = EXTRA.filter((f) => existsSync(join(MIGRATIONS, f)))
+  .map((f) => read(f))
+  .join('\n\n');
 const { essential, bulk } = splitSeed(read('0004_seed.sql'));
 
 // One paste beats four. Files 1-3 open no transaction of their own and the
@@ -88,7 +95,7 @@ write(
     'EVERYTHING - paste this one file and press run',
     'Tables, security, logic and content in the order they have to happen. Nothing else is required.',
   ) +
-    [tables, security, logic, essential].join('\n\n'),
+    [tables, security, logic, extra, essential].join('\n\n'),
 );
 
 write(
@@ -107,7 +114,9 @@ write(
   banner(
     'STEP 3 of 4 - functions, triggers, leaderboard views',
     'If this fails on pg_cron, enable that extension and re-run. Only the scheduled jobs need it.',
-  ) + logic,
+  ) + logic + (extra ? `
+
+${extra}` : ''),
 );
 
 write(

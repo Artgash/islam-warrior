@@ -292,4 +292,29 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
   },
 
   setTitle: (title) => get().updateCharacter({ title }),
+
+  /**
+   * Renaming is global by construction: the leaderboards, the guild roster
+   * and guild chat all read the name from `characters` rather than keeping
+   * copies, so one row changes and every screen follows.
+   *
+   * The bounds match the database check exactly. Letting a 21st character
+   * through here would surface as an opaque constraint violation from
+   * Postgres after the local state had already changed.
+   */
+  renameCharacter: async (name) => {
+    const character = get().character;
+    if (!character) throw new Error('There is no character to rename.');
+
+    const trimmed = name.trim().replace(/\s+/g, ' ');
+
+    if (trimmed.length < 2) throw new Error('Names need at least 2 characters.');
+    if (trimmed.length > 20) throw new Error('Names can be at most 20 characters.');
+    if (trimmed === character.name) return true;
+
+    const next = { ...character, name: trimmed, updated_at: nowTimestamp() };
+    set({ character: next });
+
+    return pushCharacter(next);
+  },
 });

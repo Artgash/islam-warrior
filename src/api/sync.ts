@@ -105,8 +105,16 @@ export async function completeHabitRemote(
  * upsert conflicts on `user_id` (which is UNIQUE) rather than the primary
  * key, so a row written from a second device updates rather than duplicates.
  */
-export async function pushCharacter(character: Character): Promise<void> {
-  if (!isSupabaseConfigured || !supabase) return;
+/**
+ * Returns whether the row actually reached the database.
+ *
+ * Most callers fire and forget, which is right for background sync. A
+ * rename cannot: the whole point is that everyone else sees it, so telling
+ * someone it worked when the write failed would be a lie they only discover
+ * from someone else's screen.
+ */
+export async function pushCharacter(character: Character): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
 
   const { stats, ...rest } = character;
   const row = { ...rest, ...stats };
@@ -115,8 +123,13 @@ export async function pushCharacter(character: Character): Promise<void> {
     .from('characters')
     .upsert(row, { onConflict: 'user_id' });
 
-  if (error) reportSyncError('characters', error);
-  else reportSyncSuccess();
+  if (error) {
+    reportSyncError('characters', error);
+    return false;
+  }
+
+  reportSyncSuccess();
+  return true;
 }
 
 export async function pushHabits(habits: Habit[]): Promise<void> {

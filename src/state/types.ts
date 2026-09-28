@@ -80,6 +80,11 @@ export interface CharacterSlice {
   /** Day-rollover housekeeping: decay, comeback bonus, fallen reset. */
   runDailyRollover: (today: ISODate) => void;
   setTitle: (title: string | null) => void;
+  /**
+   * Rename the character everywhere. Resolves to true when the new name
+   * reached the database, false when it is only local for now.
+   */
+  renameCharacter: (name: string) => Promise<boolean>;
 }
 
 export interface HabitsSlice {
