@@ -271,10 +271,22 @@ export default function SetupPage() {
             <OpenLink href={LINKS.authUrls}>URL configuration</OpenLink>
             <OpenLink href={LINKS.smtp}>SMTP settings</OpenLink>
           </div>
-          <p className="text-xs text-muted/80">
-            Supabase&rsquo;s built-in mailer is capped at a few messages an hour. Set your own SMTP
-            before sharing the link publicly, or sign-up emails will quietly stop arriving.
-          </p>
+          <div className="flex items-start gap-2 rounded-lg border border-danger/40 bg-danger/5 p-2.5">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-danger" />
+            <div className="space-y-1.5 text-xs">
+              <p>
+                <strong>Your own SMTP is required before anyone else can sign up.</strong>{' '}
+                Supabase&rsquo;s built-in mailer sends only a few messages an hour, and only to the
+                project owner&rsquo;s address. Everyone else gets{' '}
+                <em>&ldquo;email rate limit exceeded&rdquo;</em>, or nothing at all.
+              </p>
+              <p className="text-muted/80">
+                Any SMTP provider works. Resend and Brevo both have free tiers large enough that
+                this never comes up again. Add it under Authentication → SMTP Settings, then raise
+                the hourly cap under Rate Limits.
+              </p>
+            </div>
+          </div>
         </Step>
 
         <Step number={5} title="Check it worked" icon={<Rocket className="size-4" />} done={Boolean(working && user)}>

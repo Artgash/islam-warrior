@@ -29,6 +29,49 @@ interface LocalAccount {
   onboarded: boolean;
 }
 
+/**
+ * Turns Supabase's auth errors into something a player can act on.
+ *
+ * The raw strings are written for developers, and the most common one in a
+ * fresh project - the built-in mailer's hourly cap - reads as though the
+ * player did something wrong. It is a project configuration limit, so say
+ * that, and say it to whoever can actually fix it.
+ */
+export function friendlyAuthError(message: string): string {
+  const text = message.toLowerCase();
+
+  if (text.includes('rate limit') || text.includes('too many requests')) {
+    return (
+      'The project has hit its hourly limit for sending email. ' +
+      "Supabase's built-in mailer only allows a few messages an hour and only " +
+      'delivers to the project owner. Connect your own SMTP provider to lift it, ' +
+      'or wait an hour before trying again.'
+    );
+  }
+
+  if (text.includes('already registered') || text.includes('already been registered')) {
+    return 'That email already has an account. Sign in instead, or reset the password.';
+  }
+
+  if (text.includes('invalid login credentials')) {
+    return 'That email and password do not match an account.';
+  }
+
+  if (text.includes('email address') && text.includes('invalid')) {
+    return 'That address was rejected. Some domains, including example.com, are blocked.';
+  }
+
+  if (text.includes('password should be')) {
+    return 'That password is too short. Use at least eight characters.';
+  }
+
+  if (text.includes('for security purposes')) {
+    return 'Too soon after the last attempt. Wait a few seconds and try again.';
+  }
+
+  return message;
+}
+
 function loadAccounts(): LocalAccount[] {
   return readJsonSync<LocalAccount[]>(LOCAL_USERS_KEY, []);
 }
@@ -78,7 +121,7 @@ export async function signUp(email: string, password: string): Promise<AuthResul
       password,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(friendlyAuthError(error.message));
     if (!data.user) throw new Error('Sign-up did not return a user.');
 
     // A user with no session means the project requires email confirmation.
@@ -131,7 +174,7 @@ export async function signIn(email: string, password: string): Promise<AuthResul
       email: normalized,
       password,
     });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(friendlyAuthError(error.message));
     if (!data.user) throw new Error('Sign-in did not return a user.');
 
     return {
@@ -167,7 +210,7 @@ export async function signInWithGoogle(): Promise<void> {
     provider: 'google',
     options: { redirectTo: `${window.location.origin}/auth/callback` },
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyAuthError(error.message));
 }
 
 export async function signOut(): Promise<void> {
@@ -217,7 +260,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
   const { error } = await client.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
     redirectTo: `${window.location.origin}/auth/reset`,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyAuthError(error.message));
 }
 
 /**
@@ -238,7 +281,7 @@ export async function resendConfirmation(email: string): Promise<void> {
     email: email.trim().toLowerCase(),
     options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyAuthError(error.message));
 }
 
 export async function updatePassword(newPassword: string): Promise<void> {
@@ -247,7 +290,7 @@ export async function updatePassword(newPassword: string): Promise<void> {
   }
   const client = requireSupabase();
   const { error } = await client.auth.updateUser({ password: newPassword });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyAuthError(error.message));
 }
 
 /* ------------------------------------------------------------------ */
@@ -273,7 +316,7 @@ export async function markOnboarded(userId: string): Promise<void> {
 export async function deleteAccount(userId: string): Promise<void> {
   if (isSupabaseConfigured && supabase) {
     const { error } = await supabase.functions.invoke('delete-account');
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(friendlyAuthError(error.message));
     await supabase.auth.signOut();
     return;
   }
