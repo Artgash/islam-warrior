@@ -34,3 +34,6 @@ art-manifest.json
 
 # Generated art, if any is ever added locally rather than to Supabase storage
 public/art/
+
+# TypeScript incremental build cache - machine-local, not source
+*.tsbuildinfo
