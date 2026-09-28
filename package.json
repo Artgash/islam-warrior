@@ -18,7 +18,8 @@
     "db:push": "supabase db push",
     "db:apply": "vite-node scripts/apply-migrations.ts",
     "db:direct": "vite-node scripts/db-apply.ts",
-    "art:prompts": "vite-node scripts/art-prompts.ts"
+    "art:prompts": "vite-node scripts/art-prompts.ts",
+    "go-live": "vite-node scripts/go-live.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
