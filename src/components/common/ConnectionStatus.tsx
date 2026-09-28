@@ -4,8 +4,12 @@
  *
  * This exists because sync used to fail silently. A player could be signed
  * in, see a leaderboard, and have no idea that nothing was reaching the
- * server. If the cloud is broken the app now says so, in plain words, with
- * the actual database error attached.
+ * server. If the cloud is broken the app says so, in plain words.
+ *
+ * Deliberately no table names, error codes or database messages. They mean
+ * nothing to a player, they describe infrastructure that is not theirs, and
+ * the person who can act on them is reading the console, not this panel -
+ * which is where `reportSyncError` still logs them in full.
  */
 
 import { useEffect, useState } from 'react';
@@ -30,12 +34,8 @@ export function ConnectionStatus({ className }: { className?: string }) {
         <div className="min-w-0">
           <p className="font-display text-sm text-bone">Local mode</p>
           <p className="mt-1 text-xs leading-relaxed text-muted">
-            Your account and progress live in this browser only. Leaderboards show a generated
-            practice ladder, not real players, and guild chat is not live.
-          </p>
-          <p className="mt-1.5 text-xs text-muted/70">
-            Add <code className="text-gold">VITE_SUPABASE_URL</code> and{' '}
-            <code className="text-gold">VITE_SUPABASE_ANON_KEY</code> to connect a real database.
+            Your account and progress live in this browser only. Leaderboards show a practice
+            ladder, not real players, and guild chat is not live.
           </p>
         </div>
       </div>
@@ -51,12 +51,8 @@ export function ConnectionStatus({ className }: { className?: string }) {
         <div className="min-w-0">
           <p className="font-display text-sm text-bone">Cloud sync is failing</p>
           <p className="mt-1 text-xs leading-relaxed text-muted">
-            You are signed in, but writes to <span className="text-bone">{error.table}</span> are
-            being rejected. Your progress is safe on this device and will sync once this is fixed.
-          </p>
-          <p className="mt-1.5 break-words rounded border border-edge bg-night/60 px-2 py-1 font-mono text-[10px] text-danger/90">
-            {error.code ? `[${error.code}] ` : ''}
-            {error.message}
+            Your progress is safe on this device, but it is not reaching the server right now.
+            It will sync by itself once the connection recovers.
           </p>
         </div>
       </div>
@@ -102,9 +98,9 @@ export function ConnectionPill() {
 
   if (error) {
     return (
-      <span className="stat-chip border-danger/50 text-danger" title={error.message}>
+      <span className="stat-chip border-danger/50 text-danger" title="Not syncing right now">
         <AlertTriangle className="size-3" />
-        Sync error
+        Not synced
       </span>
     );
   }

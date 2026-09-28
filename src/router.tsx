@@ -23,7 +23,6 @@ const SeasonPage = lazy(() => import('@/pages/Season'));
 const ProfilePage = lazy(() => import('@/pages/Profile'));
 const SettingsPage = lazy(() => import('@/pages/Settings'));
 const MorePage = lazy(() => import('@/pages/More'));
-const SetupPage = lazy(() => import('@/pages/Setup'));
 const AuthCallbackPage = lazy(() => import('@/pages/AuthCallback'));
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPassword'));
 
@@ -147,7 +146,6 @@ export const router = createBrowserRouter([
       { path: 'profile', element: <ProfilePage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'more', element: <MorePage /> },
-      { path: 'setup', element: <SetupPage /> },
     ],
   },
 

@@ -134,7 +134,9 @@ function Board({
     return (
       <EmptyState
         title="Could not load this board"
-        description={query.error instanceof Error ? query.error.message : 'Unknown error.'}
+        // Whatever Postgres said describes infrastructure the player does
+        // not own and cannot act on. Retry is the only useful move.
+        description="Something went wrong reaching the leaderboard. Try again in a moment."
         action={
           <Button variant="secondary" onClick={() => query.refetch()}>
             <RefreshCw className="size-4" />

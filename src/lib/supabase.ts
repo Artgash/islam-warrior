@@ -30,8 +30,12 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
 /** Throws a clear error rather than a null-dereference deep in a query. */
 export function requireSupabase(): SupabaseClient {
   if (!supabase) {
+    // The variable names help whoever is running this locally and mean
+    // nothing to a player, so they stay out of the production bundle.
     throw new Error(
-      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local.',
+      import.meta.env.DEV
+        ? 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local.'
+        : 'The server is not available right now.',
     );
   }
   return supabase;
