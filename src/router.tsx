@@ -24,6 +24,8 @@ const ProfilePage = lazy(() => import('@/pages/Profile'));
 const SettingsPage = lazy(() => import('@/pages/Settings'));
 const MorePage = lazy(() => import('@/pages/More'));
 const SetupPage = lazy(() => import('@/pages/Setup'));
+const AuthCallbackPage = lazy(() => import('@/pages/AuthCallback'));
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPassword'));
 
 const TermsPage = lazy(() => import('@/pages/Legal').then((m) => ({ default: m.TermsPage })));
 const PrivacyPage = lazy(() => import('@/pages/Legal').then((m) => ({ default: m.PrivacyPage })));
@@ -110,7 +112,22 @@ export const router = createBrowserRouter([
       </PublicOnly>
     ),
   },
-  { path: '/auth/callback', element: <Navigate to="/" replace /> },
+  {
+    path: '/auth/callback',
+    element: (
+      <Suspense fallback={<RouteFallback />}>
+        <AuthCallbackPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/auth/reset',
+    element: (
+      <Suspense fallback={<RouteFallback />}>
+        <ResetPasswordPage />
+      </Suspense>
+    ),
+  },
   { path: '/onboarding', element: <OnboardingGuard /> },
 
   {

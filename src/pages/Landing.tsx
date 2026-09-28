@@ -11,7 +11,13 @@ import { Input, Label, FieldError } from '@/components/ui/input';
 import { StarDivider, GeometricField, EightPointStar } from '@/components/common/StarDivider';
 import { WarriorSprite } from '@/components/battle/Sprites';
 import { useGameStore } from '@/state';
-import { signIn, signUp, signInWithGoogle, requestPasswordReset } from '@/api/auth';
+import {
+  signIn,
+  signUp,
+  signInWithGoogle,
+  requestPasswordReset,
+  resendConfirmation,
+} from '@/api/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { TOTAL_ZONES, IBLIS_HP_DISPLAY } from '@/game/constants';
 
@@ -33,6 +39,7 @@ export default function LandingPage() {
   const [mode, setMode] = useState<Mode>('signin');
   const [busy, setBusy] = useState(false);
   const [awaitingEmail, setAwaitingEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
 
   const form = useForm<Credentials>({
     resolver: zodResolver(credentialsSchema),
@@ -79,7 +86,16 @@ export default function LandingPage() {
       const restored = useGameStore.getState().character;
       navigate(restored ?? character ? '/' : '/onboarding', { replace: true });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Something went wrong.');
+      const message = error instanceof Error ? error.message : 'Something went wrong.';
+
+      // Signing in before confirming is a dead end as a toast: the one thing
+      // that helps is another email, which lives on the waiting screen.
+      if (/email not confirmed|not confirmed/i.test(message)) {
+        setAwaitingEmail(values.email.trim().toLowerCase());
+        return;
+      }
+
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -150,9 +166,31 @@ export default function LandingPage() {
             </p>
 
             <Button
-              variant="secondary"
               size="block"
               className="mt-5"
+              disabled={resending}
+              onClick={async () => {
+                setResending(true);
+                try {
+                  await resendConfirmation(awaitingEmail);
+                  toast.success('Sent again. Give it a minute.');
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : 'Could not resend the email.',
+                  );
+                } finally {
+                  setResending(false);
+                }
+              }}
+            >
+              {resending && <Loader2 className="size-4 animate-spin" />}
+              Send it again
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="block"
+              className="mt-2"
               onClick={() => {
                 setAwaitingEmail(null);
                 setMode('signin');

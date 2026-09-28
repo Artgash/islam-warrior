@@ -28,6 +28,8 @@ import HabitsPage from '@/pages/Habits';
 import ShopPage from '@/pages/Shop';
 import IblisPage from '@/pages/Iblis';
 import LeaderboardsPage from '@/pages/Leaderboards';
+import AuthCallbackPage from '@/pages/AuthCallback';
+import ResetPasswordPage from '@/pages/ResetPassword';
 
 const USER_ID = 'render-test-user';
 
@@ -126,6 +128,24 @@ describe('render smoke tests', () => {
     useGameStore.getState().setHydrated(true);
     wrap(<LandingPage />);
     expect(screen.getByText('ISLAM WARRIOR')).toBeDefined();
+    expectCleanRender();
+  });
+
+  it('mounts the auth callback screen', () => {
+    useGameStore.getState().resetAll();
+    useGameStore.getState().setHydrated(true);
+    wrap(<AuthCallbackPage />);
+    // In local mode there is no session to wait for, so it should still
+    // render its waiting state rather than throwing on a null client.
+    expect(screen.getByText('Confirming your account')).toBeDefined();
+    expectCleanRender();
+  });
+
+  it('mounts the password reset screen', () => {
+    useGameStore.getState().resetAll();
+    useGameStore.getState().setHydrated(true);
+    wrap(<ResetPasswordPage />);
+    expect(screen.getByText('Choose a new password')).toBeDefined();
     expectCleanRender();
   });
 

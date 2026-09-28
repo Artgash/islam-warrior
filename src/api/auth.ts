@@ -220,6 +220,27 @@ export async function requestPasswordReset(email: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Sends a fresh confirmation email.
+ *
+ * Confirmation mail goes missing often enough - spam folders, typos caught
+ * too late, links expiring - that having no way to ask for another one is a
+ * dead end rather than an inconvenience.
+ */
+export async function resendConfirmation(email: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    throw new Error('Local mode does not send email; accounts are confirmed automatically.');
+  }
+
+  const client = requireSupabase();
+  const { error } = await client.auth.resend({
+    type: 'signup',
+    email: email.trim().toLowerCase(),
+    options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function updatePassword(newPassword: string): Promise<void> {
   if (!isSupabaseConfigured) {
     throw new Error('Password changes require a configured Supabase project.');
